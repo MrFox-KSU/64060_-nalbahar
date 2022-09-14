@@ -1,0 +1,36 @@
+---
+title: "Assignment_1"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+date: "2022-09-14"
+---
+
+
+#Data source: https://www.kaggle.com/datasets/iamsouravbanerjee/world-population-dataset
+#Loading the data
+```{r}
+WorldData = read.csv("~/Downloads/Soccer/world_population.csv") 
+```
+#Summary of descriptive statistics in this dataset:
+```{r}
+summary(WorldData) 
+```
+#Tranformation of data is done below by calculating the percentage change in population from 1970 to 2022:
+```{r}
+library(dplyr)
+UpdatedWorldData = dplyr::mutate(WorldData, percentageChange_1970_2022 = ((WorldData$X2022.Population - WorldData$X1970.Population)/WorldData$X1970.Population)*100)
+```
+#The following is a scatterplot of the population and growth rate:
+```{r}       
+plot(WorldData$Growth.Rate,UpdatedWorldData$percentageChange_1970_2022, xlab = "Growth Rate", ylab ="% Change in Population 1970-2022")
+```
+#The follwoing is histogram of the population in 2022:
+```{r}
+hist(WorldData$X2022.Population)
+```
+
+
+
+
