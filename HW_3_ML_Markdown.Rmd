@@ -1,0 +1,167 @@
+---
+title: "HW_3_ML"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+date: "2022-10-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+```{r load-packages, include=FALSE}
+library(dplyr)
+library(magrittr)
+library(knitr)
+library(dplyr)
+library(reshape)
+library(reshape2)
+library(readr)
+library(e1071)
+library(ggplot2)
+library(gmodels)
+library(caret)
+library(ISLR)
+library(class)
+library(reshape)
+library(reshape2)
+library(readr)
+```
+
+```{r}
+set.seed(999)
+#Loading the data and converting the independent variables to factors
+UniversalBank <- read_csv("/Users/nawwaf/Desktop/Kent/Kent Master_s/Machine Learning/UniversalBank.csv")
+Orignal_Data <- UniversalBank
+
+Orignal_Data$CreditCard <- as.factor(Orignal_Data$CreditCard)
+Orignal_Data$`Personal Loan` <- as.factor(Orignal_Data$`Personal Loan`)
+Orignal_Data$Online <- as.factor(Orignal_Data$Online)
+```
+
+```{r}
+#Split the data into training and testing set
+
+Index_Train<-createDataPartition(Orignal_Data$`Personal Loan`, p=0.6, list=FALSE)
+Train <-Orignal_Data[Index_Train,]
+Test  <-Orignal_Data[-Index_Train,]
+
+```
+
+
+```{r}
+#Removing the predictor variables  and Normalizing the data  
+Normlaized_Data <- preProcess(Train[,-c(10,13:14)], 
+                         method=c("center","scale"))
+Training_predictions <- predict(Normlaized_Data,Train)
+Test_predictions <- predict(Normlaized_Data,Test)
+
+```
+
+
+```{r}
+#(A)
+# Create a pivot table for the training data with Online as a column variable, CC as a row 
+# variable, and Loan as a secondary row variable
+table <- ftable(Training_predictions[,c("CreditCard","Personal Loan","Online")])
+table
+
+```
+
+
+```{r}
+#(B)
+# Consider the task of classifying a customer who owns a bank credit card and is actively using 
+# online banking services
+
+
+#Total of people that accepted a personal loan = 
+Total_Loan = 76 + 120 + 39 + 53
+#Total number of people with No Loan
+Total_No_Loan = 769 + 1130 + 319 + 494
+ALL_Loan_And_No_Loan = Total_Loan + Total_No_Loan
+#Total of people that have CC
+CC_total = 319 + 494 + 39 + 53
+#Total of people that have CC among those with loan 
+Loan_And_CC = 39 + 53
+No_loan_And_CC = 319 + 494
+#Total of people that have online banking 
+Total_Online = 1130 + 120 + 494 + 53
+#Total of people that have online banking among those that accepted a loan
+Loan_And_Online = 120 + 53
+No_Loan_And_Online = 1130 + 494
+
+Numenator = (Loan_And_CC / Total_Loan) * (Loan_And_Online / Total_Loan) * (Total_Loan/ALL_Loan_And_No_Loan)
+Denomentor = (No_loan_And_CC/Total_No_Loan)*(No_Loan_And_Online/Total_No_Loan)*(Total_No_Loan/ALL_Loan_And_No_Loan)
+P= Numenator/Denomentor
+cat("the probability of a customer to accept a loan while being a credit card holder and an online banking user is",P)
+
+```
+```{r}
+#(C) separate pivot tables for the training data. One will have Loan (rows) as a 
+#function of Online (columns) and the other will have Loan (rows) as a function of CC. 
+Online_And_Loan_Table = ftable(Training_predictions[,c(10,13)])
+Online_And_Loan_Table
+CC_And_Loan_Table = ftable(Training_predictions[,c(10,14)])
+CC_And_Loan_Table
+ftable(Training_predictions[,10])
+```
+
+```{r}
+#(D) Compute the following quantities [P(A | B) means “the probability ofA given B”]:  
+#i. P(CC = 1 | Loan = 1) (the proportion of credit card holders among the loan acceptors) 
+CC_And_Loan = 92/(92+196)
+CC_And_Loan
+#ii. P(Online = 1 | Loan = 1)  
+Online_And_Loan =173/(173+115)
+Online_And_Loan
+#iii. P(Loan = 1) (the proportion of loan acceptors)  
+Loan_to_ALL = 288/(2712+288)
+Loan_to_ALL
+#iv. P(CC = 1 | Loan = 0)  
+CC_And_N_Loan = 813/(813+1899)
+CC_And_N_Loan
+#v. P(Online = 1 | Loan = 0) 
+Online_And_No_loan =1624/(1624+1088)
+Online_And_No_loan
+#vi. P(Loan = 0) 
+No_Loan_To_ALL = 2712/(2712+288)
+No_Loan_To_ALL
+```
+
+```{r}
+#(E). Use the quantities computed above to compute the naive Bayes probability
+#P(Loan = 1 | CC = 1, Online = 1). 
+(CC_And_Loan*Online_And_Loan*Loan_to_ALL)/((CC_And_Loan*Online_And_Loan*Loan_to_ALL)+(CC_And_N_Loan*Online_And_No_loan*No_Loan_To_ALL))
+
+```
+
+```{r}
+#(F) Compare this value with the one obtained from the pivot table in (B). Which is a more 
+#accurate estimate?
+cat("Naive bayes account for the conditional events against Ci where in the direct method we dont account for Ci", NULL)
+
+```
+
+```{r}
+#Run naive Bayes on the data. Examine the model output on training data, and find the entry 
+#that corresponds to P(Loan = 1 | CC = 1, Online = 1). Compare this to the number you 
+#obtained in (E). 
+
+NaiveB <- naiveBayes(`Personal Loan`~Online+CreditCard,data=Training_predictions)
+NaiveB
+
+#(G)Which of the entries in this table are needed for computing P(Loan = 1 | CC = 1, Online = 1)?
+cat("The entries needed are A-priori probabilities (0):904, Conditional probabilities:
+   Online(0,1):0.5988201, Conditional probabilities:CreditCard(0,1): 0.2997788, A-priori probabilities:
+Y:0.096, Conditional probabilities:
+   Online(1,1):0.6006944, Conditional probabilities:CreditCard 0.3194444",NULL)
+
+#Compare this to the number you 
+#obtained in (E).
+cat("The numbers are exactly the same as the ones in E")
+```
