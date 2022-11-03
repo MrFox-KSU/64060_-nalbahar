@@ -1,0 +1,107 @@
+---
+title: "Assignment_4_Trail"
+author: "Nawwaf Albahar"
+date: "2022-11-03"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+```{r load-packages, include=FALSE}
+library(flexclust)
+library(ISLR)
+library(tidyverse)
+library(factoextra)
+library(readr)
+```
+
+```{r}
+# load and preprocess data
+Pharmaceuticals <- read_csv("/Users/nawwaf/Desktop/Kent/Kent Master_s/Machine Learning/Pharmaceuticals.csv")
+Pharmaceuticals
+#Keep seprate to use latter for labeling to see if there is a pattern
+Pharmaceuticals_Label <- Pharmaceuticals$Median_Recommendation
+table(Pharmaceuticals_Label)
+
+#Take the numircal columns only
+Pharmaceuticals_Data <-- Pharmaceuticals[,3:11]
+
+```
+
+a. Use only the numerical variables (1 to 9) to cluster the 21 firms. Justify the various choices made in 
+conducting the cluster analysis, such as weights for different variables, the specific clustering algorithm(s) 
+used, the number of clusters formed, and so on. 
+```{r}
+#assign the columns that we want to cluster by to the variable Pharmaceuticals_Clustering_Columns
+Pharmaceuticals_Clustering_Columns <- Pharmaceuticals_Data[,c(1,9)]
+#Renove columns that we want to cluster by from the dataset
+#Pharmaceuticals_Data <- Pharmaceuticals_Data[,-1]
+#Pharmaceuticals_Data <- Pharmaceuticals_Data[,-8]
+
+#normalize the dataset after removing the cluster we want to cluster by
+Normalized_Pharmaceuticals <- sapply(Pharmaceuticals_Clustering_Columns, scale)
+
+#Calculate the distance 
+Normalized_Pharmaceuticals_Dist <- dist(Normalized_Pharmaceuticals)
+Normalized_Pharmaceuticals_Dist
+```
+
+```{r}
+#We need to decide the number of cluster 
+#This help in determining what K should be. 
+#It looks like 6 is the elbow as it curves upwaerd a little after it. Nonetheless, It is not clear still
+fviz_nbclust(Normalized_Pharmaceuticals, kmeans, method = "wss") + labs(subtitle = "Elbow Method")
+
+#if elbow method is not clear there is Another method for determining the K value which is  silhouette method:
+fviz_nbclust(Normalized_Pharmaceuticals, kmeans, method = "silhouette") + labs(subtitle = "silhouette Method")
+
+```
+
+a. Use only the numerical variables (1 to 9) to cluster the 21 firms. Justify the various choices made in 
+conducting the cluster analysis, such as weights for different variables, the specific clustering algorithm(s) 
+used, the number of clusters formed, and so on. 
+
+K-Means and euclidean distance is used for clustering as it is centroid-based clustering algorithm and Centroid-based algorithms are efficient and simple in clustering numircal data into sub-groups that share similar characteristics. More weight is given to the chosen columns that we are going to cluster by and that is by eliminating the rest of the columns. the number of cluster is decided by either the elbow method or silhouette as shown above 3 is the elbow area and the silhouette confrims that as well
+```{r}
+#Now we run the Kmeans algorithm with K that we got from either of the methods and 100 iterations to cluster our data 
+km <- kmeans(Normalized_Pharmaceuticals, centers = 3, nstart = 100)
+
+#print the result of kmeans algortihm
+km
+
+
+```
+
+```{r}
+#Now assign the label back so that we see if there is a pattern based on it
+rownames(Normalized_Pharmaceuticals) <- paste(Pharmaceuticals_Label,1:dim(Pharmaceuticals)[1])
+rownames(Normalized_Pharmaceuticals)
+```
+b. Interpret the clusters with respect to the numerical variables used in forming the clusters. 
+
+The green cluster is those companies that have large market cap and high net profit.
+The blue one is those companies that also have medium to large market cap but they have low net profit.
+The red cluster is those compaines that have small market cap as well as low net profit.
+
+```{r}
+#Vizualize the clusters
+fviz_cluster(km, data = Normalized_Pharmaceuticals)
+```
+c. Is there a pattern in the clusters with respect to the numerical variables (10 to 12)? (those not used in 
+forming the clusters) 
+
+We don't see any clear pattern with the regards to variable 10 to 12, we used Median recommendation (across major brokerages) as label to illustrate that there is no clear pattern as can be seen below 
+
+d. Provide an appropriate name for each cluster using any or all of the variables in the dataset.
+
+The green cluster is those companies that have large market cap and high net profit, suggested name is Stars  
+The blue one is those companies that also have large market cap but they have low net profit, suggested name is cash cow
+The red cluster is those compaines that have small market cap as well as low net profit, suggested name is dog
+
+The suggested names for the clusters is inspired from the BCG matrix
