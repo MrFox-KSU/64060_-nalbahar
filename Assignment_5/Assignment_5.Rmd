@@ -1,0 +1,132 @@
+---
+title: "Assignment_5"
+author: "Nawwaf Albahar"
+date: "2022-11-30"
+output: word_document
+---
+
+
+```{r load-packages, include=FALSE}
+library(flexclust)
+library(cluster)
+library(ISLR)
+library(tidyverse)
+library(factoextra)
+library(readr)
+```
+
+Load the data set and convert it into a data frame
+```{r}
+Cereals <- read_csv("/Users/nawwaf/Desktop/Kent/Kent Master_s/Machine Learning/Cereals.csv")
+df <- Cereals
+df <- as.data.frame(df)
+df <- na.omit(df) # Remove NA (missing) values
+
+Cereals_clean <- na.omit(Cereals)
+
+
+head(df)          # Examine the dataset 
+```
+
+Clean the dataframe and examine it
+```{r}
+df <- na.omit(df) # Remove NA (missing) values
+
+Cereals_clean <- na.omit(Cereals)
+
+head(df)          # Examine the dataset 
+
+
+```
+
+Normalize the numrical columns
+```{r}
+df <-- df[,4:16]
+
+df <- scale(df)
+```
+
+Reassign the nonnumrical column to the dataframe after normalization
+```{r}
+Normalized_df_Data <- cbind(df, name = Cereals_clean$name)
+Normalized_df_Data <- cbind(df, mfr = Cereals_clean$mfr)
+Normalized_df_Data <- cbind(df, type = Cereals_clean$type)
+
+head(df) #re-examine the scaled data 
+```
+Compute with agnes and with different linkage methods
+```{r}
+
+hc_single <- agnes(df, method = "single")
+hc_complete <- agnes(df, method = "complete")
+hc_average <- agnes(df, method = "average")
+hc_ward.D <- agnes(df, method = "ward")
+
+# Compare Agglomerative coefficients
+print(hc_single$ac)
+
+print(hc_complete$ac)
+
+print(hc_average$ac)
+
+print(hc_ward.D$ac) # is the best method as it classify 0.9046042 into their actual cluster and the closer to 1 is best.
+
+```
+Plot with the bes method in this case ward is the best
+```{r}
+pltree(hc_ward.D, cex = 0.6, hang = -1, main = "Dendrogram of agnes") 
+```
+Calculate the euclidean to use in the clustering using ward since it is the best method
+```{r}
+distance <- dist(df, method = "euclidean")
+# Hierarchical clustering using ward method
+hc1 <- hclust(distance, method = "ward.D2" )
+
+```
+Now plot using the euclidean distance and ward method
+```{r}
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+```
+Cut the tree into four group and show how many member is in each group 
+```{r}
+grp <- cutree(hc1, k = 4)
+# Number of members in each cluster
+table(grp)
+```
+now bind the group membership to each record 
+```{r}
+df <- as.data.frame(cbind(df,grp))
+```
+visulaize the cereals and their cluster membership
+```{r}
+fviz_cluster(list(data = df, cluster = grp))
+```
+Now using the numrical and the group membership show each clusters members
+```{r}
+Newdf = Cereals_clean[,4:16]
+clust <- cbind(Newdf, grp)
+clust[clust$grp==1,]
+
+
+clust[clust$grp==2,]
+
+
+clust[clust$grp==3,]
+
+
+clust[clust$grp==4,]
+```
+now based on the rating columns show the mean rating of each cluster to determine which cluster have the highes rating
+```{r}
+mean(clust[clust$grp==1,"rating"])
+
+mean(clust[clust$grp==2,"rating"])
+
+mean(clust[clust$grp==3,"rating"])
+
+mean(clust[clust$grp==4,"rating"])
+
+```
+from the rating we could tell that cluster one has the highest rating therefore it is the cluster with the best breakfast cereals
+
